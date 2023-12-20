@@ -7,7 +7,11 @@ import { injectChatUserNameColorScript } from "~lib/chats";
 import { setUserNameColorVariable } from "~lib/chats";
 import { CSS_VARIABLES } from "~lib/constants";
 
-export const storage = new Storage();
+export const config: PlasmoCSConfig = {
+  matches: ["https://chzzk.naver.com/live/*"],
+};
+
+const storage = new Storage();
 
 storage.watch({
   enabled: (c) => {
@@ -41,9 +45,28 @@ storage.watch({
   },
 });
 
-export const config: PlasmoCSConfig = {
-  matches: ["https://chzzk.naver.com/live/*"],
-};
+function setCssVariable(variableName: string, value: string) {
+  document.documentElement.style.setProperty(variableName, value);
+}
+
+async function init() {
+  const [
+    tododokEnabled,
+    messageFontSize,
+    messageFontFamily,
+    messageLineHeight,
+  ] = await Promise.all([
+    storage.get("enabled"),
+    storage.get(CSS_VARIABLES.MESSAGE_FONT_SIZE),
+    storage.get(CSS_VARIABLES.MESSAGE_FONT_FAMILY),
+    storage.get(CSS_VARIABLES.MESSAGE_LINE_HEIGHT),
+  ]);
+
+  document.body.setAttribute("data-tododok-enabled", tododokEnabled);
+  setCssVariable(CSS_VARIABLES.MESSAGE_FONT_SIZE, `${messageFontSize}px`);
+  setCssVariable(CSS_VARIABLES.MESSAGE_FONT_FAMILY, `${messageFontFamily}`);
+  setCssVariable(CSS_VARIABLES.MESSAGE_LINE_HEIGHT, `${messageLineHeight}`);
+}
 
 window.addEventListener("load", async () => {
   injectCss(FONT_CSS);
@@ -57,34 +80,3 @@ window.addEventListener("load", async () => {
   }
   injectChatUserNameColorScript(chatWrapper);
 });
-
-async function init() {
-  const tododokEnabled = await storage.get("enabled");
-  if (tododokEnabled) {
-    document.body.setAttribute("data-tododok-enabled", "true");
-  } else {
-    document.body.setAttribute("data-tododok-enabled", "false");
-  }
-
-  const messageFontSize = await storage.get(CSS_VARIABLES.MESSAGE_FONT_SIZE);
-  document.documentElement.style.setProperty(
-    CSS_VARIABLES.MESSAGE_FONT_SIZE,
-    `${messageFontSize}px`
-  );
-
-  const messageFontFamily = await storage.get(
-    CSS_VARIABLES.MESSAGE_FONT_FAMILY
-  );
-  document.documentElement.style.setProperty(
-    CSS_VARIABLES.MESSAGE_FONT_FAMILY,
-    `${messageFontFamily}`
-  );
-
-  const messageLineHeight = await storage.get(
-    CSS_VARIABLES.MESSAGE_LINE_HEIGHT
-  );
-  document.documentElement.style.setProperty(
-    CSS_VARIABLES.MESSAGE_LINE_HEIGHT,
-    `${messageLineHeight}`
-  );
-}
